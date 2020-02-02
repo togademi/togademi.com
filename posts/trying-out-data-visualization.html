@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>tomás / posts</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="icon" href="/favicon.ico">
+</head>
+
+<body>
+    <p><a href="/">home</a></p>
+    <p>2018 October 17</p>
+    <h1>Trying out data visualization</h1>
+    <p>This past summer I wanted to improve my understanding of machine learning by doing some projects and following tutorials. I quickly realized that I was only focusing on the application of machine learning techniques, but I wasn't really understanding how to manipulate the data (organizing the data is what you do first, before applying any ML algorithm to it). Thus in order to learn how to handle and process data, I decided to make some <strong>data visualization</strong>.</p>
+    <p>I browsed the <a href="https://www.kaggle.com/datasets">datasets available on Kaggle</a> until I found one that caught my attention: <a href="https://www.kaggle.com/kemical/kickstarter-projects">Kickstarter projects from 2009 to 2017</a>.</p>
+    <p>I observed the different columns in the dataset and decided that I wanted to visualize the success rate of Kickstarter projects by categories (like <em>photography</em>, <em>games</em>, <em>art</em>, <em>design</em>, etc). Then I proceeded to organize the data to fit this interest.</p>
+    <p><em>Disclaimer</em>: here when I talk about successful projects I mean projects that attained their funding goal. I know that there are some projects which achieved their goals but never delivered what was promised afterward, but I don't have an easy way to know which ones by looking at the data set.</p>
+    <h2 id="organizing-data">Organizing data</h2>
+    <p>I used Python for this. Firstly the <strong>Pandas library</strong> (and sometimes NumPy too) to create a data frame with only the data I was interested in.</p>
+    <p>So I extracted the different Kickstarter categories from the original data set (called 'data' here):</p>
+    <pre><code>main_categories = data[&quot;main_category&quot;].values
+main_categories = np.unique(main_categories)
+main_categories = pd.Series(data=main_categories)</code></pre>
+    <p>And then split the <em>games</em> category into three categories: <em>video games</em>, <em>tabletop games</em> and <em>other games</em>. I did this because I was told that tabletop games have a much higher success rate than video games on Kickstarter, so it would be wise to have insights on each of them.</p>
+    <pre><code>games = [&quot;Tabletop Games&quot;, &quot;Video Games&quot;]
+games = pd.Series(data=games)
+categories = pd.concat([main_categories, games], ignore_index=True)
+df_minus_video_tabletop = data[(data.category != &quot;Tabletop Games&quot;) &amp; (data.category != &quot;Video Games&quot;)]</code></pre>
+    <p>Then I went to count, for each category, <strong>how many projects had attained their goal, undershot it or been canceled</strong>. I also counted the <strong>funding goal</strong> (in USD) for each category. I made two functions to do this, that they would go inside a loop over every category.</p>
+    <pre><code>def items_in_category(df, category, state, is_main_category):
+    if is_main_category:
+        temp = df[(df.main_category == category) &amp; (df.state == state)][&#39;state&#39;].value_counts()
+    else:
+        temp = df[(df.category == category) &amp; (df.state == state)][&#39;state&#39;].value_counts()
+    return temp.at[state]
+
+def goal_sum(df, category, is_main_category):
+    if is_main_category:
+        return df[df.main_category == category][&quot;usd_goal_real&quot;].sum()
+    else:
+        return df[df.category == category][&quot;usd_goal_real&quot;].sum()</code></pre>
+    <p>And to finish organizing data I needed to:</p>
+    <ul>
+    <li>count the <strong>total number of projects</strong> in each category (to calculate the success rate)</li>
+    <li>calculate the <strong>success rate</strong></li>
+    <li>calculate the <strong>average funding goal</strong> (I'll explain later why)</li>
+    </ul>
+    <pre><code># Create new column for total number of projects
+categories_df[&#39;total_projects&#39;] = categories_df.apply(lambda row: row.attained_goal + row.undershot_goal + row.canceled, axis=1)
+
+# Create new column for success ratio
+categories_df[&#39;success_ratio&#39;] = categories_df.apply(lambda row: (row.attained_goal) / (row.undershot_goal + row.canceled), axis=1)
+
+# Create new column for average goal
+categories_df[&#39;average_goal&#39;] = categories_df.apply(lambda row: row.goal_sum / row.total_projects, axis=1)</code></pre>
+    <p>After doing this and <strong>sorting</strong> the different categories <strong>by success rate</strong>, we get this data frame:</p>
+    <div class="imgbox">
+        <img class="img-center-fit" src="../img/ks_df.jpg" alt="Data frame of the Kickstarter categories">
+    </div>
+    <h2 id="plotting-data">Plotting data</h2>
+    <p>Once we have the data frame with all the data that interests us, it's time to plot for visualizing it. To plot all this data I chose a <strong>stacked bar graph that shows the relative success/failure/cancelation rates</strong> among categories. I used the <strong>Matplotlib library</strong> for this.</p>
+    <pre><code>fig, ax = plt.subplots()
+
+attained_goal_ax = ax.bar(x, attained_goal, width, color=&#39;#034752&#39;, edgecolor=&#39;white&#39;)
+undershot_goal_ax = ax.bar(x, undershot_goal, width, bottom=attained_goal, color=&#39;#0c9ab2&#39;, edgecolor=&#39;white&#39;)
+canceled_ax = ax.bar(x, canceled, width, bottom=[i+j for i,j in zip(attained_goal, undershot_goal)], color=&#39;#00daff&#39;, edgecolor=&#39;white&#39;)</code></pre>
+    <p>Then I wanted to <strong>show the average funding goal</strong> of each category. To do this I thought of placing a graphical indication (like a small symbol) in each of the bars at the height of their corresponding <em>average funding goal</em> (you see this on the Y-axis on the right). What I did was plotting a <strong>line graph</strong> over the existing graph. Into this line plot I put markers in the shape of a stripe (<code>marker='_'</code>), then I removed the line (<code>linestyle='None'</code>), <strong>leaving only the markers</strong>.</p>
+    <pre><code>ax2 = ax.twinx()
+average_goal = ax2.plot(x, categories_df[&quot;average_goal&quot;], linestyle=&#39;None&#39;, color=&quot;white&quot;, marker=&#39;_&#39;, markersize=39, markeredgewidth=7, markeredgecolor=&#39;#e58200&#39;)
+plt.ylabel(&quot;Average funding goal (USD)&quot;, fontsize=19, color=&#39;#e58200&#39;)</code></pre>
+    <p><strong><em>Et voilà!</em></strong></p>
+    <div class="imgbox">
+        <img class="img-center-fit" src="../img/ks_success_ratio.jpg" alt="Graph: success rate of Kickstarter projects by category">
+    </div>
+    <p>Why I wanted to calculate the average funding goal was to compare it with the success rate. Therefore we see that the categories that most often achieve their goals are also some of the ones that ask for the least money. This seems reasonable. Let's also look at the two outliers here:</p>
+    <ul>
+    <li>the <strong><em>film and video</em></strong> category is the 7th most <strong>successful</strong>, while also being the 3rd category that <strong>asks for the most money</strong>.</li>
+    <li>the <strong><em>crafts</em></strong> category is one of the <strong>least successful</strong> despite being the 2nd category that <strong>asks for the least money</strong>.</li>
+    </ul>
+    <p>This graph has taken me many iterations and reconsiderations. In which I got feedback and incrementally improved it. <a href="../img/ks_success_ratio_first_version.jpg" target="_blank">This was my first version.</a></p>
+    <hr />
+    <p>You can find the Jupyter notebook with all the code <a href="https://github.com/togademi/dataviz/blob/master/kickstarter/kickstarter.ipynb">here</a>.</p>
+    <p>And the <a href="https://www.kaggle.com/kemical/kickstarter-projects">original dataset</a>.</p>
+</body>
