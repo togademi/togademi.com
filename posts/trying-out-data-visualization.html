@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>tomás / posts</title>
+    <title>tomás / trying out data visualization</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="../style.css">
@@ -10,14 +10,14 @@
 </head>
 
 <body>
-    <p><a href="/">home</a></p>
+    <p>⛰️ <a href="/">home</a></p>
     <p>2018 October 17</p>
     <h1>Trying out data visualization</h1>
     <p>This past summer I wanted to improve my understanding of machine learning by doing some projects and following tutorials. I quickly realized that I was only focusing on the application of machine learning techniques, but I wasn't really understanding how to manipulate the data (organizing the data is what you do first, before applying any ML algorithm to it). Thus in order to learn how to handle and process data, I decided to make some <strong>data visualization</strong>.</p>
     <p>I browsed the <a href="https://www.kaggle.com/datasets">datasets available on Kaggle</a> until I found one that caught my attention: <a href="https://www.kaggle.com/kemical/kickstarter-projects">Kickstarter projects from 2009 to 2017</a>.</p>
     <p>I observed the different columns in the dataset and decided that I wanted to visualize the success rate of Kickstarter projects by categories (like <em>photography</em>, <em>games</em>, <em>art</em>, <em>design</em>, etc). Then I proceeded to organize the data to fit this interest.</p>
     <p><em>Disclaimer</em>: here when I talk about successful projects I mean projects that attained their funding goal. I know that there are some projects which achieved their goals but never delivered what was promised afterward, but I don't have an easy way to know which ones by looking at the data set.</p>
-    <h2 id="organizing-data">Organizing data</h2>
+    <h2>Organizing data</h2>
     <p>I used Python for this. Firstly the <strong>Pandas library</strong> (and sometimes NumPy too) to create a data frame with only the data I was interested in.</p>
     <p>So I extracted the different Kickstarter categories from the original data set (called 'data' here):</p>
     <pre><code>main_categories = data[&quot;main_category&quot;].values
@@ -59,7 +59,7 @@ categories_df[&#39;average_goal&#39;] = categories_df.apply(lambda row: row.goal
     <div class="imgbox">
         <img class="img-center-fit" src="../img/ks_df.jpg" alt="Data frame of the Kickstarter categories">
     </div>
-    <h2 id="plotting-data">Plotting data</h2>
+    <h2>Plotting data</h2>
     <p>Once we have the data frame with all the data that interests us, it's time to plot for visualizing it. To plot all this data I chose a <strong>stacked bar graph that shows the relative success/failure/cancelation rates</strong> among categories. I used the <strong>Matplotlib library</strong> for this.</p>
     <pre><code>fig, ax = plt.subplots()
 
